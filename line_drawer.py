@@ -1,21 +1,18 @@
-import matplotlib.pyplot as plt
+import mplfinance as mpf
 
 
-class LineDrawer(object):
-    lines = []
+class LineDrawer:
 
-    def draw_line(self):
-        ax = plt.gca()
-        xy = plt.ginput(2)
+    def __init__(self):
+        self.lines = []
 
+    def draw_line(self, fig, ax):
+        xy = fig.ginput(n=2)
+
+        print(xy)
         x = [p[0] for p in xy]
         y = [p[1] for p in xy]
-        line = plt.plot(x, y)
+        line = ax.plot(x, y)
         ax.figure.canvas.draw()
 
         self.lines.append(line)
-
-
-plt.plot([1, 2, 3, 4, 5])
-ld = LineDrawer()
-ld.draw_line()  # here you click on the plot
