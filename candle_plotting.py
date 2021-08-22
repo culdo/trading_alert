@@ -3,18 +3,32 @@ import pandas as pd
 import mplfinance as mpf
 from binance.client import Client
 import json
+
+from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
+
 from line_drawer import LineDrawer
-import matplotlib.pyplot as plt
-plt.ion()
+
 
 class PricePlot:
-    def __init__(self, symbol="ETHUSDT", interval='15m', start_str='20 August 2021 00:00 am +0800'):
-        with open("api_key.json") as f:
-            api_keys = json.load(f)
-        self.client = Client(**api_keys)
+    def __init__(self, symbol="BTCUSDT", interval='1m', start_str='22 August 2021 4:00 pm +0800'):
+        self.is_show_volume = True
+        self._load_client()
+
         self.symbol = symbol
         self.interval = interval
         self.start_str = start_str
+
+        self.data = self.get_binance_df()
+        self._creat_plot()
+        self.fig.canvas.mpl_connect('key_press_event', self.on_press)
+        self.ld = LineDrawer(self.fig, self.ax1)
+        mpf.show()
+
+    def _load_client(self):
+        with open("api_key.json") as f:
+            api_keys = json.load(f)
+        self.client = Client(**api_keys)
 
     def get_binance_df(self):
         klines = np.array(self.client.get_historical_klines(self.symbol, self.interval, start_str=self.start_str))
@@ -35,22 +49,56 @@ class PricePlot:
         df = df.set_index('Open Time')
         return df
 
-    def test(self):
+    def _creat_plot(self):
+        self.fig, axes = mpf.plot(self.data, returnfig=True, figratio=(10, 6), type="candle",
+                                  volume=True,
+                                  title=f"Price of {self.symbol}",
+                                  tight_layout=True, style="binance")
+        self.ax1 = axes[0]
+        self.ax3 = axes[2]
+
+    def on_press(self, event):
+        print('press', event.key)
+        if event.key in "t-vr=u":
+            # draw trend line
+            if event.key == 't':
+                self.ld.draw_tline()
+            # draw horizontal line
+            # because "h" key used as default shortcut of reset view, we use "-" key as shortcut
+            elif event.key == '-':
+                self.ld.draw_hline()
+            # draw vertical line
+            elif event.key == 'v':
+                self.ld.draw_vline()
+            # refresh plot
+            elif event.key == 'r':
+                self.refresh_plot()
+            # open/close volume panel
+            elif event.key == '=':
+                if self.is_show_volume:
+                    self.ax3.set_visible(False)
+                else:
+                    self.ax3.set_visible(True)
+                self.is_show_volume = not self.is_show_volume
+            # undo
+            elif event.key == 'u':
+                line = self.ld.lines.pop()
+                if isinstance(line, list):
+                    line.pop().remove()
+                elif isinstance(line, Line2D):
+                    line.remove()
+                else:
+                    raise TypeError
+
+            self.fig.canvas.draw()
+
+    def refresh_plot(self):
         self.data = self.get_binance_df()
-        fig, ax = self.creat_plot()
-        ld = LineDrawer()
-        ld.draw_line(fig, ax)
-        mpf.show()
-
-    def creat_plot(self):
-        fig, axes = mpf.plot(self.data, returnfig=True, figratio=(10, 6), type="candle",
-                 volume=True,
-                 title=f"Price of {self.symbol}",
-                 tight_layout=True, style="binance")
-
-        # mpf.show()
-        return fig, axes[0]
+        mpf.plot(self.data, returnfig=True, ax=self.ax1, volume=self.ax3, type='candle',
+                 style="binance")
+        self.ax1.autoscale()
+        self.ax3.autoscale()
 
 
 if __name__ == '__main__':
-    PricePlot().test()
+    pp = PricePlot()
