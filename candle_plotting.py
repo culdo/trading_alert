@@ -58,7 +58,6 @@ class PricePlot:
         self.ax3 = axes[2]
 
     def on_press(self, event):
-        print('press', event.key)
         if event.key in "t-vr=u":
             # draw trend line
             if event.key == 't':
@@ -77,8 +76,14 @@ class PricePlot:
             elif event.key == '=':
                 if self.is_show_volume:
                     self.ax3.set_visible(False)
+                    # values from mplfinance\_panels.py:207
+                    self.ax1.set_position([0.108, 0.108+0, 0.868, 0.8632])
+                    self.ax1.tick_params(axis='x', labelbottom=True, rotation=45)
                 else:
                     self.ax3.set_visible(True)
+                    # values from mplfinance\_panels.py:207
+                    self.ax1.set_position([0.108, 0.108+0.24662857142857142, 0.868, 0.6165714285714285])
+                    self.ax1.tick_params(axis='x', labelbottom=False)
                 self.is_show_volume = not self.is_show_volume
             # undo
             elif event.key == 'u':
@@ -94,7 +99,9 @@ class PricePlot:
 
     def refresh_plot(self):
         self.data = self.get_binance_df()
-        mpf.plot(self.data, returnfig=True, ax=self.ax1, volume=self.ax3, type='candle',
+        self.ax1.clear()
+        self.ax3.clear()
+        mpf.plot(self.data, ax=self.ax1, volume=self.ax3, type='candle',
                  style="binance")
         self.ax1.autoscale()
         self.ax3.autoscale()
