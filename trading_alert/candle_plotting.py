@@ -104,8 +104,8 @@ class PricePlot:
                 self.save_as_pickle()
             # move clicked line
             elif event.key == 'm':
-                self.ld.move_line_end()
                 print("move_line_end")
+                self.ld.move_line_end()
             # done move
             elif event.key == ',':
                 print("is_move_done")
@@ -143,6 +143,7 @@ class PricePlot:
     def save_as_pickle(self):
         for line in self.ld.lines:
             line.win10_toast = None
+            line.alert_equation.diff = None
         pk.dump(self.ta, file=open('ta.pkl', 'wb'))
         print("Save TradingAlert as ta.pkl")
 

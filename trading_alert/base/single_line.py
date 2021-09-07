@@ -58,7 +58,7 @@ class SingleLine:
             AssertionError("Line type error!")
 
         self.alert_annotation.set_position(p3)
-        self.annotation_point = p3
+        self.alert_annotation.set_color("orange")
         if self.alert_equation:
             self.alert_equation = AlertEquation(self)
 

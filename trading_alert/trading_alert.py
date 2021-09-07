@@ -26,7 +26,7 @@ class TradingAlert:
     def restore(self):
         _apply_mpfstyle(self.pp.style)
         self.pp.restore_mpl_event()
-        self.pp.ld.restore_alerts()
+        self.pp.ld.restore_notify()
         if self.pp.is_auto_update:
             self.pp.refresh_plot_th()
         self._init_tk()
