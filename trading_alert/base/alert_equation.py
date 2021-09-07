@@ -1,9 +1,10 @@
-class LineEquation:
+class AlertEquation:
     def __init__(self, single_line):
         self.single_line = single_line
         self.curr_x = None
         self.diff = None
         self.is_been_triggered = False
+        self.is_debug = False
 
         self.line_type = single_line.line_type
         self.HLINE = single_line.HLINE
@@ -29,7 +30,10 @@ class LineEquation:
         else:
             return False
 
-    def is_alert_triggered(self, price, data_index, touch_threshold=2):
+    def is_alert_triggered(self, price, data_index, touch_threshold=None):
+        if self.is_been_triggered:
+            return False
+
         prev_x = self.curr_x
         self.curr_x = len(data_index) - 1
 
@@ -38,16 +42,15 @@ class LineEquation:
 
         prev_diff = self.diff
         self.diff = alert_y - price
-        print(f"prev_x curr_x: {prev_x} {self.curr_x}")
-        print(f"next_y - price: {alert_y} - {price}")
-        print(f"next_y diff:{self.diff}")
-        print()
+        if self.is_debug:
+            print(f"prev_x curr_x: {prev_x} {self.curr_x}")
+            print(f"next_y - price: {alert_y} - {price}")
+            print(f"next_y diff:{self.diff}")
+            print()
         is_same_bar = prev_x == self.curr_x
         is_crossed = prev_diff and is_same_bar and (
                     (self.diff < 0 < prev_diff) or (self.diff > 0 > prev_diff))
-        is_touched = abs(self.diff) < touch_threshold
-        if self.check_x_range(alert_x) and (is_crossed or is_touched) and not self.is_been_triggered:
+        # is_touched = abs(self.diff) < touch_threshold
+        if self.check_x_range(alert_x) and is_crossed:
             self.is_been_triggered = True
             return True
-        else:
-            return False

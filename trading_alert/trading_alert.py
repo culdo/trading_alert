@@ -13,15 +13,13 @@ class TradingAlert:
         self.start_str = start_str
         self.interval = kwargs["interval"]
         self.pp = PricePlot(start_str, **kwargs)
-        self.event_loop()
+        self.alert_event_loop()
         self.start_time = datetime.now()
 
-    def event_loop(self):
+    def alert_event_loop(self):
         def _th():
             while True:
                 if self.pp.ld.has_alert():
-                    self.pp.refresh_plot()
-                    self.pp.fig.canvas.draw()
                     symbols = self.pp.client.get_symbol_ticker()
                     for symbol in symbols:
                         if symbol["symbol"] == self.pp.symbol:
@@ -54,5 +52,5 @@ class TradingAlert:
 
 if __name__ == '__main__':
     # ta = TradingAlert(get_before_time(hours=24), interval="15m")
-    ta = TradingAlert(get_before_time(hours=24), symbol="FTMUSDT", interval="15m")
+    ta = TradingAlert(get_before_time(hours=6), symbol="FTMUSDT", interval="15m")
     mpf.show()

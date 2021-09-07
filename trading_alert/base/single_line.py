@@ -3,7 +3,7 @@ from tkinter.simpledialog import askstring
 import numpy as np
 from matplotlib.lines import Line2D
 
-from trading_alert.util.line_equation import LineEquation
+from trading_alert.base.alert_equation import AlertEquation
 from trading_alert.util.win10_toast import Win10Toast
 
 
@@ -13,7 +13,7 @@ class SingleLine:
     VLINE = 3
 
     def __init__(self, plt_line, line_type, annotation_point=None):
-        self.is_debugging = True
+        self.is_debug = False
         self.plt_line = plt_line
         self.line_type = line_type
         self.annotation_point = annotation_point
@@ -38,14 +38,23 @@ class SingleLine:
         if self.line_type is SingleLine.TLINE:
             p1 = np.array(self.plt_line.get_xydata()[0])
             p2 = np.array(self.plt_line.get_xydata()[1])
-            if np.linalg.norm(p3-p1) < np.linalg.norm(p3-p2):
+            if np.linalg.norm(p3 - p1) < np.linalg.norm(p3 - p2):
                 self.plt_line.set_data(*zip(p3, p2))
             else:
                 self.plt_line.set_data(*zip(p1, p3))
         elif self.line_type is SingleLine.HLINE:
-            self.plt_line.set_data(p3)
+            data = [[0, 1],
+                    [[p3[1]], [p3[1]]]]
+            self.plt_line.set_data(data)
         elif self.line_type is SingleLine.VLINE:
-            self.plt_line.set_data(p3)
+            data = [[[p3[0]], [p3[0]]],
+                    [0, 1]]
+            self.plt_line.set_data(data)
+        else:
+            AssertionError("Line type error!")
+
+        self.alert_equation.is_been_triggered = False
+        self.alert_annotation.set_position(p3)
 
     def remove(self, lines):
         if isinstance(self.plt_line, list):
@@ -59,19 +68,22 @@ class SingleLine:
         lines.remove(self)
         del self
 
-    def set_alert(self, ax, symbol):
+    def set_alert(self, symbol):
         if self.alert_annotation:
             print("重複設定鬧鐘!!!")
             return
 
         notify_msg = askstring("Trading Alert", "觸發時通知訊息")
-        if not self.is_debugging:
-            self.win10_toast = Win10Toast(symbol+" "+notify_msg)
+        if not self.is_debug:
+            self.win10_toast = Win10Toast(symbol + " " + notify_msg)
 
+        self._add_annotation()
+
+    def _add_annotation(self):
+        ax = self.plt_line.axes
         self.alert_annotation = ax.annotate('⏰',
-                                            xy=self.annotation_point, xycoords='data')
-
-        self.alert_equation = LineEquation(self)
+                                            xy=self.annotation_point, xycoords='data', color="orange")
+        self.alert_equation = AlertEquation(self)
 
     def unset_alert(self):
         if self.alert_equation:

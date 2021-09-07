@@ -1,11 +1,11 @@
-import time
 from threading import Thread
 
 import numpy as np
 
-from trading_alert.util.single_line import SingleLine
+from trading_alert.base.single_line import SingleLine
 import tkinter as tk
 from tkinter import font
+
 
 class LineDrawer:
 
@@ -76,7 +76,7 @@ class LineDrawer:
     def set_alert(self):
         if not self.clicked_line:
             print("Please click a line")
-        self.clicked_line.set_alert(self.ax, self.pp.symbol)
+        self.clicked_line.set_alert(self.pp.symbol)
 
     def unset_alert(self):
         self.clicked_line.unset_alert()
@@ -85,7 +85,7 @@ class LineDrawer:
         for line in self.lines:
             if line.alert_equation and line.alert_equation.is_alert_triggered(price, self.pp.data.index):
                 cb_alert()
-                if not line.is_debugging:
+                if not line.is_debug:
                     line.win10_toast.notify()
 
     def has_alert(self):

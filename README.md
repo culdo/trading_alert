@@ -3,7 +3,7 @@ Free trading alert tool
 
 # Features
 * Drawings
-* Refreshing Price
+* Auto Refreshing Price on set alert
 * Open/Close Volume panel
 
 # Keyboard Shortcuts
@@ -18,6 +18,7 @@ Free trading alert tool
 # Requirements
 * Matplotlib
 * Mplfinance
+* Tkinter
 
 # To-do-list
 - [ ] E-mail notification
