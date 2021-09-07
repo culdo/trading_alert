@@ -12,13 +12,17 @@ class SingleLine:
     HLINE = 2
     VLINE = 3
 
-    def __init__(self, plt_line, line_type, annotation_point=None):
+    def __init__(self, pp, plt_line, line_type, annotation_point=None):
+        self.style = pp.style
         self.is_debug = False
+        self.symbol = pp.symbol
         self.plt_line = plt_line
         self.line_type = line_type
         self.annotation_point = annotation_point
         self.alert_equation = None
         self.alert_annotation = None
+        self.notify_msg = None
+        self.win10_toast = None
 
     def calc_point_dist(self, p3):
         if self.line_type is SingleLine.TLINE:
@@ -53,8 +57,10 @@ class SingleLine:
         else:
             AssertionError("Line type error!")
 
-        self.alert_equation.is_been_triggered = False
         self.alert_annotation.set_position(p3)
+        self.annotation_point = p3
+        if self.alert_equation:
+            self.alert_equation = AlertEquation(self)
 
     def remove(self, lines):
         if isinstance(self.plt_line, list):
@@ -68,22 +74,25 @@ class SingleLine:
         lines.remove(self)
         del self
 
-    def set_alert(self, symbol):
+    def set_alert(self):
         if self.alert_annotation:
             print("重複設定鬧鐘!!!")
             return
 
-        notify_msg = askstring("Trading Alert", "觸發時通知訊息")
+        self.notify_msg = askstring("Trading Alert", "觸發時通知訊息")
         if not self.is_debug:
-            self.win10_toast = Win10Toast(symbol + " " + notify_msg)
+            self.set_win10_toast()
 
-        self._add_annotation()
+        self.add_annotation()
+        self.alert_equation = AlertEquation(self)
 
-    def _add_annotation(self):
+    def set_win10_toast(self):
+        self.win10_toast = Win10Toast(self.symbol + " " + self.notify_msg)
+
+    def add_annotation(self):
         ax = self.plt_line.axes
         self.alert_annotation = ax.annotate('⏰',
                                             xy=self.annotation_point, xycoords='data', color="orange")
-        self.alert_equation = AlertEquation(self)
 
     def unset_alert(self):
         if self.alert_equation:

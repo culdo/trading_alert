@@ -11,8 +11,9 @@ class AlertEquation:
         self._gen_equation(single_line.plt_line)
 
     def _gen_equation(self, line):
-        print(line.get_xdata())
-        print(line.get_ydata())
+        if self.is_debug:
+            print(line.get_xdata())
+            print(line.get_ydata())
         if self.line_type is self.HLINE:
             self.m = 0
             self.b = line.get_ydata()[0][0]

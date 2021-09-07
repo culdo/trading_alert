@@ -5,17 +5,16 @@ from threading import Thread
 import numpy as np
 import pandas as pd
 import mplfinance as mpf
-import json
+import pickle as pk
 
 from trading_alert.base.line_drawer import LineDrawer
-from trading_alert.trade.account import BinanceAccount
 from trading_alert.util.time_tool import get_before_time
 
 specify_date = datetime(year=2021, month=8, day=29, hour=1, minute=30).astimezone().strftime("%d %B %Y %H:%M %z")
 
 
 class PricePlot:
-    def __init__(self, start_str, symbol="BTCUSDT", interval='15m', theme="white"):
+    def __init__(self, start_str, client, ta, symbol="BTCUSDT", interval='15m', theme="white"):
         if theme == "black":
             self.style = mpf.make_mpf_style(base_mpf_style='binance', base_mpl_style="dark_background",
                                             rc={'font.family': 'Segoe UI Emoji'})
@@ -24,7 +23,8 @@ class PricePlot:
         self.theme = theme
         self.is_show_volume = True
         self.is_auto_update = False
-        self.client = BinanceAccount()
+        self.client = client
+        self.ta = ta
 
         self.symbol = symbol
         self.interval = interval
@@ -34,6 +34,9 @@ class PricePlot:
         self._creat_plot()
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         self.ld = LineDrawer(self)
+
+    def restore_mpl_event(self):
+        self.fig.canvas.mpl_connect('key_press_event', self.on_press)
 
     def get_data_index(self):
         return self.data.index
@@ -91,13 +94,18 @@ class PricePlot:
                       verticalalignment='top', bbox=props)
 
     def on_press(self, event):
-        if event.key in "xmat-1u=zd,":
+        if event.key in "xmat-1u=zd,S":
             # get clicked line
             if event.key == 'x':
                 self.ld.get_clicked_line()
+                print("get_clicked_line")
+            # quit and save PricePlot
+            elif event.key == 'S':
+                self.save_as_pickle()
             # move clicked line
             elif event.key == 'm':
                 self.ld.move_line_end()
+                print("move_line_end")
             # done move
             elif event.key == ',':
                 print("is_move_done")
@@ -132,6 +140,12 @@ class PricePlot:
 
             self.fig.canvas.draw()
 
+    def save_as_pickle(self):
+        for line in self.ld.lines:
+            line.win10_toast = None
+        pk.dump(self.ta, file=open('ta.pkl', 'wb'))
+        print("Save TradingAlert as ta.pkl")
+
     def toggle_volume_panel(self):
         if self.is_show_volume:
             self.ax3.set_visible(False)
@@ -163,7 +177,3 @@ class PricePlot:
                 time.sleep(1)
 
         Thread(target=_th).start()
-
-
-if __name__ == '__main__':
-    pp = PricePlot(get_before_time(minutes=30))

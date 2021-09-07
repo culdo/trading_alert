@@ -1,20 +1,36 @@
 import time
+import tkinter as tk
 from threading import Thread
+from tkinter import font
+
+from mplfinance._styles import _apply_mpfstyle
 
 from trading_alert.candle_plotting import PricePlot, mpf
 from datetime import datetime
 import calendar
 
+from trading_alert.trade.account import BinanceAccount
 from trading_alert.util.time_tool import get_before_time
 
 
 class TradingAlert:
-    def __init__(self, start_str, **kwargs):
+    def __init__(self, start_str, pp=None, **kwargs):
         self.start_str = start_str
         self.interval = kwargs["interval"]
-        self.pp = PricePlot(start_str, **kwargs)
+        account = BinanceAccount()
+        self._init_tk()
+        self.pp = PricePlot(start_str, account, self, **kwargs)
         self.alert_event_loop()
         self.start_time = datetime.now()
+
+    def restore(self):
+        _apply_mpfstyle(self.pp.style)
+        self.pp.restore_mpl_event()
+        self.pp.ld.restore_alerts()
+        if self.pp.is_auto_update:
+            self.pp.refresh_plot_th()
+        self._init_tk()
+        self.alert_event_loop()
 
     def alert_event_loop(self):
         def _th():
@@ -48,6 +64,13 @@ class TradingAlert:
             time_by_unit = (now - self.start_time).days // month_days
         delta = time_by_unit // int(self.interval[:-1])
         return delta
+
+    def _init_tk(self):
+        root = tk.Tk()
+        root.withdraw()
+        default_font = font.nametofont("TkDefaultFont")
+        default_font.configure(family='Courier', size=20)
+        root.option_add("*Font", default_font)
 
 
 if __name__ == '__main__':
