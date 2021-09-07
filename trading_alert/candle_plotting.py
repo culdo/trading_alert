@@ -8,7 +8,6 @@ import mplfinance as mpf
 import pickle as pk
 
 from trading_alert.base.line_drawer import LineDrawer
-from trading_alert.util.time_tool import get_before_time
 
 specify_date = datetime(year=2021, month=8, day=29, hour=1, minute=30).astimezone().strftime("%d %B %Y %H:%M %z")
 
@@ -143,9 +142,13 @@ class PricePlot:
     def save_as_pickle(self):
         for line in self.ld.lines:
             line.win10_toast = None
+            line.alert_equation.diff_temp = line.alert_equation.diff
             line.alert_equation.diff = None
         pk.dump(self.ta, file=open('ta.pkl', 'wb'))
         print("Save TradingAlert as ta.pkl")
+        for line in self.ld.lines:
+            line.set_win10_toast()
+            line.alert_equation.diff = line.alert_equation.diff_temp
 
     def toggle_volume_panel(self):
         if self.is_show_volume:

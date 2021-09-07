@@ -20,7 +20,7 @@ class LineDrawer:
         y = [p[1] for p in xy]
         line = self.ax.plot(x, y)
 
-        self.selected_line = SingleLine(self.pp, line[0], SingleLine.TLINE, annotation_point=xy[-1])
+        self.selected_line = SingleLine(self.pp.symbol, line[0], SingleLine.TLINE, annotation_point=xy[-1])
         self.lines.append(self.selected_line)
 
     def draw_hline(self):
@@ -29,7 +29,7 @@ class LineDrawer:
         y = [p[1] for p in xy]
         line = self.ax.axhline(y)
 
-        self.selected_line = SingleLine(self.pp, line, SingleLine.HLINE, annotation_point=xy[-1])
+        self.selected_line = SingleLine(self.pp.symbol, line, SingleLine.HLINE, annotation_point=xy[-1])
         self.lines.append(self.selected_line)
 
     def draw_vline(self):
@@ -38,7 +38,7 @@ class LineDrawer:
         x = [p[0] for p in xy]
         line = self.ax.axvline(x)
 
-        self.selected_line = SingleLine(self.pp, line, SingleLine.VLINE)
+        self.selected_line = SingleLine(self.pp.symbol, line, SingleLine.VLINE)
         self.lines.append(self.selected_line)
 
     def restore_notify(self):

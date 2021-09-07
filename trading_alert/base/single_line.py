@@ -12,10 +12,10 @@ class SingleLine:
     HLINE = 2
     VLINE = 3
 
-    def __init__(self, pp, plt_line, line_type, annotation_point=None):
-        self.style = pp.style
+    def __init__(self, symbol, plt_line, line_type, annotation_point=None):
+        self.enable_color = "red"
         self.is_debug = False
-        self.symbol = pp.symbol
+        self.symbol = symbol
         self.plt_line = plt_line
         self.line_type = line_type
         self.annotation_point = annotation_point
@@ -57,9 +57,9 @@ class SingleLine:
         else:
             AssertionError("Line type error!")
 
-        self.alert_annotation.set_position(p3)
-        self.alert_annotation.set_color("orange")
         if self.alert_equation:
+            self.alert_annotation.set_position(p3)
+            self.alert_annotation.set_color(self.enable_color)
             self.alert_equation = AlertEquation(self)
 
     def remove(self, lines):
@@ -92,9 +92,10 @@ class SingleLine:
     def add_annotation(self):
         ax = self.plt_line.axes
         self.alert_annotation = ax.annotate('⏰',
-                                            xy=self.annotation_point, xycoords='data', color="orange")
+                                            xy=self.annotation_point, xycoords='data', color=self.enable_color)
 
     def unset_alert(self):
         if self.alert_equation:
             self.alert_annotation.remove()
             self.alert_equation = None
+            self.notify_msg = None
