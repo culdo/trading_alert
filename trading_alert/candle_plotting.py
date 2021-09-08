@@ -135,6 +135,7 @@ class PricePlot:
                 self.ld.remove_clicked()
             # delete clicked alert
             elif event.key == 'z':
+                print("unsetting alert...")
                 self.ld.unset_alert()
 
             self.fig.canvas.draw()

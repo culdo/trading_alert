@@ -17,6 +17,7 @@ class SingleLine:
         self.is_debug = False
         self.symbol = symbol
         self.plt_line = plt_line
+        self.ax = plt_line.axes
         self.line_type = line_type
         self.annotation_point = annotation_point
         self.alert_equation = None
@@ -58,9 +59,9 @@ class SingleLine:
             AssertionError("Line type error!")
 
         if self.alert_equation:
-            self.alert_annotation.set_position(p3)
-            self.alert_annotation.set_color(self.enable_color)
-            self.alert_equation = AlertEquation(self)
+            print("move alert too")
+            self.alert_annotation.remove()
+            self._add_alert(p3)
 
     def remove(self, lines):
         if isinstance(self.plt_line, list):
@@ -75,7 +76,7 @@ class SingleLine:
         del self
 
     def set_alert(self):
-        if self.alert_annotation:
+        if self.alert_equation:
             print("重複設定鬧鐘!!!")
             return
 
@@ -83,19 +84,21 @@ class SingleLine:
         if not self.is_debug:
             self.set_win10_toast()
 
-        self.add_annotation()
-        self.alert_equation = AlertEquation(self)
+        self._add_alert(self.annotation_point)
 
     def set_win10_toast(self):
         self.win10_toast = Win10Toast(self.symbol + " " + self.notify_msg)
 
-    def add_annotation(self):
-        ax = self.plt_line.axes
-        self.alert_annotation = ax.annotate('⏰',
-                                            xy=self.annotation_point, xycoords='data', color=self.enable_color)
+    def _add_alert(self, annotation_point):
+        self.alert_annotation = self.ax.annotate('⏰',
+                                                 xy=annotation_point, xycoords='data', color=self.enable_color)
+        self.alert_equation = AlertEquation(self)
 
     def unset_alert(self):
         if self.alert_equation:
             self.alert_annotation.remove()
             self.alert_equation = None
             self.notify_msg = None
+            print("unset done")
+        else:
+            print("No alert can unset!")

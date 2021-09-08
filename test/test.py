@@ -5,7 +5,7 @@ from trading_alert.util.time_tool import get_before_time
 import pickle as pk
 
 if __name__ == '__main__':
-    # ta = TradingAlert(get_before_time(hours=6), symbol="FTMUSDT", interval="15m")
+    # ta = TradingAlert(get_before_time(hours=12), symbol="FTMUSDT", interval="15m")
     ta = pk.load(file=open('ta.pkl', 'rb'))
     ta.restore()
     mpf.show()
