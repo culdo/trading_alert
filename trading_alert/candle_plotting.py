@@ -15,6 +15,7 @@ specify_date = datetime(year=2021, month=8, day=29, hour=1, minute=30).astimezon
 
 class PricePlot:
     def __init__(self, start_str, client, ta, symbol="BTCUSDT", interval='15m', theme="white"):
+        self.curr_time = None
         self.prev_delta = None
         if theme == "black":
             self.style = mpf.make_mpf_style(base_mpf_style='binance', base_mpl_style="dark_background",
@@ -182,17 +183,7 @@ class PricePlot:
     def update_candle(self):
         print(self.delta_x)
         if self.prev_delta is not None and self.delta_x - self.prev_delta > 0:
-            latest_index = self.data.index[-1]
-            print(str(latest_index))
-            now_time = datetime.strptime(str(latest_index), "%Y-%m-%d %H:%M:%S")
-            delta_time = float(self.interval[:-1])*self.delta_x
-            if self.interval[-1] == "m":
-                new_time = now_time + timedelta(minutes=delta_time)
-            elif self.interval[-1] == "h":
-                new_time = now_time + timedelta(hours=delta_time)
-            elif self.interval[-1] == "d":
-                new_time = now_time + timedelta(days=delta_time)
-            new_index = new_time
+            new_index = self.curr_time
             print(f"self.delta_x: {self.delta_x}")
             print(f"new_index: {new_index}")
             new_open = self.data.iloc[-1, 3]

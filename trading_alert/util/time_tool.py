@@ -7,7 +7,7 @@ def get_before_time(minutes=0, hours=0):
 
 
 def calc_headless_delta(self, interval):
-    now = datetime.now()
+    now = datetime.utcnow()
     time_by_unit = None
 
     # Check current kindle bar
@@ -26,6 +26,7 @@ def calc_headless_delta(self, interval):
     if int(now.timestamp()) % time_by_unit == 0:
         if not self.is_delta_updated:
             self.delta_x = self.delta_x + 1
+            self.curr_time = now
             self.is_delta_updated = True
     else:
         self.is_delta_updated = False
