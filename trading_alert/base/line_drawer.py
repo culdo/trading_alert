@@ -20,7 +20,7 @@ class LineDrawer:
         y = [p[1] for p in xy]
         line = self.ax.plot(x, y)
 
-        self.selected_line = SingleLine(self.pp.symbol, line[0], SingleLine.TLINE, annotation_point=xy[-1])
+        self.selected_line = SingleLine(self.pp, line[0], SingleLine.TLINE, annotation_point=xy[-1])
         self.lines.append(self.selected_line)
 
     def draw_hline(self):
@@ -29,7 +29,7 @@ class LineDrawer:
         y = [p[1] for p in xy]
         line = self.ax.axhline(y)
 
-        self.selected_line = SingleLine(self.pp.symbol, line, SingleLine.HLINE, annotation_point=xy[-1])
+        self.selected_line = SingleLine(self.pp, line, SingleLine.HLINE, annotation_point=xy[-1])
         self.lines.append(self.selected_line)
 
     def draw_vline(self):
@@ -38,7 +38,7 @@ class LineDrawer:
         x = [p[0] for p in xy]
         line = self.ax.axvline(x)
 
-        self.selected_line = SingleLine(self.pp.symbol, line, SingleLine.VLINE)
+        self.selected_line = SingleLine(self.pp, line, SingleLine.VLINE)
         self.lines.append(self.selected_line)
 
     def restore_notify(self):
@@ -61,6 +61,7 @@ class LineDrawer:
         while not self.is_move_done:
             xy = self.fig.ginput(n=1)
             if self.is_move_done:
+                print("move line done")
                 break
             p3 = np.array(xy[0])
             self.selected_line.move_line_end(p3)
@@ -77,14 +78,6 @@ class LineDrawer:
 
     def unset_alert(self):
         self.selected_line.unset_alert()
-
-    def when_alert_triggered(self, price, cb_alert):
-        for line in self.lines:
-            if line.alert_equation and line.alert_equation.is_alert_triggered(price, self.pp.data.index):
-                line.alert_annotation.set_color("grey")
-                cb_alert()
-                if not line.is_debug:
-                    line.win10_toast.notify()
 
     def has_alert(self):
         for line in self.lines:

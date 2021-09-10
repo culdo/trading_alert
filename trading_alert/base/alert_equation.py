@@ -1,6 +1,12 @@
+from trading_alert.util.time_tool import calc_headless_delta
+
+
 class AlertEquation:
     def __init__(self, single_line):
         self.single_line = single_line
+        self.init_data_x = single_line.pp.init_data_x
+        self.interval = single_line.pp.ta.interval
+        self.start_time = single_line.pp.ta.start_time
         self.curr_x = None
         self.diff = None
         self.is_been_triggered = False
@@ -36,7 +42,8 @@ class AlertEquation:
             return False
 
         prev_x = self.curr_x
-        self.curr_x = len(data_index) - 1
+        delta = calc_headless_delta(self.start_time, self.interval)
+        self.curr_x = (len(self.init_data_x) - 1) + delta
 
         alert_x = self.curr_x
         alert_y = alert_x * self.m + self.b
@@ -55,3 +62,5 @@ class AlertEquation:
         if self.check_x_range(alert_x) and is_crossed:
             self.is_been_triggered = True
             return True
+
+

@@ -30,6 +30,7 @@ class PricePlot:
         self.start_str = start_str
 
         self.data = self.get_binance_df()
+        self.init_data_x = self.data.index
         self._creat_plot()
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         self.ld = LineDrawer(self)
@@ -96,8 +97,8 @@ class PricePlot:
         if event.key in "xmat-1u=zd,S":
             # get clicked line
             if event.key == 'x':
-                self.ld.get_clicked_line()
                 print("get_clicked_line")
+                self.ld.get_clicked_line()
             # quit and save PricePlot
             elif event.key == 'S':
                 self.save_as_pickle()
@@ -107,7 +108,6 @@ class PricePlot:
                 self.ld.move_line_end()
             # done move
             elif event.key == ',':
-                print("is_move_done")
                 self.ld.is_move_done = True
             # set alert on click draw line
             elif event.key == 'a':
@@ -179,6 +179,6 @@ class PricePlot:
             while self.is_auto_update:
                 self.refresh_plot()
                 self.fig.canvas.draw()
-                time.sleep(1)
+                time.sleep(2)
 
         Thread(target=_th).start()

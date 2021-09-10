@@ -12,10 +12,11 @@ class SingleLine:
     HLINE = 2
     VLINE = 3
 
-    def __init__(self, symbol, plt_line, line_type, annotation_point=None):
+    def __init__(self, pp, plt_line, line_type, annotation_point=None):
         self.enable_color = "red"
         self.is_debug = False
-        self.symbol = symbol
+        self.pp = pp
+        self.symbol = pp.symbol
         self.plt_line = plt_line
         self.ax = plt_line.axes
         self.line_type = line_type

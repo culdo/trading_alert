@@ -7,14 +7,15 @@ from mplfinance._styles import _apply_mpfstyle
 
 from trading_alert.candle_plotting import PricePlot, mpf
 from datetime import datetime
-import calendar
 
 from trading_alert.trade.account import BinanceAccount
+from trading_alert.util.email_notifier import send_notify_email
 from trading_alert.util.time_tool import get_before_time
 
 
+# TODO 210910: Use thread workers to spawn multiple PricePlot in one TradingAlert
 class TradingAlert:
-    def __init__(self, start_str, pp=None, **kwargs):
+    def __init__(self, start_str, **kwargs):
         self.start_str = start_str
         self.interval = kwargs["interval"]
         account = BinanceAccount()
@@ -37,33 +38,36 @@ class TradingAlert:
             while True:
                 if self.pp.ld.has_alert():
                     symbols = self.pp.client.get_symbol_ticker()
+                    # TODO 210910: Use thread workers to detect alert per symbol
                     for symbol in symbols:
                         if symbol["symbol"] == self.pp.symbol:
                             price = float(symbol["price"])
-                            self.pp.ld.when_alert_triggered(price, self.test_cb)
+                            self.when_alert_triggered(price, self.test_cb)
                 time.sleep(1)
+
+        Thread(target=_th).start()
+
+    def when_alert_triggered(self, price, cb_alert):
+        # TODO 210910: Use thread workers to detect alert per line
+        for line in self.pp.ld.lines:
+            # TODO 210909: Change method of getting x index to headless method
+            if line.alert_equation and line.alert_equation.is_alert_triggered(price, self.pp.data.index):
+                self._do_after_alert(cb_alert, line)
+
+    def _do_after_alert(self, cb_alert, line, send_email=True):
+        Thread(target=cb_alert).start()
+
+        def _th():
+            line.alert_annotation.set_color("grey")
+            if not line.is_debug:
+                line.win10_toast.notify()
+            if send_email:
+                send_notify_email(line)
 
         Thread(target=_th).start()
 
     def test_cb(self):
         print("執行觸發時回呼函數")
-
-    def calc_headless_delta(self):
-        now = datetime.now()
-        time_by_unit = now.hour
-
-        # Check current kindle bar
-        if self.interval[-1] == "m":
-            time_by_unit = (now - self.start_time).seconds // 60
-        elif self.interval[-1] == "h":
-            time_by_unit = (now - self.start_time).seconds // 60 // 60
-        elif self.interval[-1] == "d":
-            time_by_unit = (now - self.start_time).days
-        elif self.interval[-1] == "M":
-            month_days = calendar.monthrange(now.year, now.month)[1]
-            time_by_unit = (now - self.start_time).days // month_days
-        delta = time_by_unit // int(self.interval[:-1])
-        return delta
 
     def _init_tk(self):
         root = tk.Tk()
