@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import Thread
 
 import numpy as np
@@ -8,12 +8,14 @@ import mplfinance as mpf
 import pickle as pk
 
 from trading_alert.base.line_drawer import LineDrawer
+from trading_alert.util.time_tool import calc_headless_delta
 
 specify_date = datetime(year=2021, month=8, day=29, hour=1, minute=30).astimezone().strftime("%d %B %Y %H:%M %z")
 
 
 class PricePlot:
     def __init__(self, start_str, client, ta, symbol="BTCUSDT", interval='15m', theme="white"):
+        self.prev_delta = None
         if theme == "black":
             self.style = mpf.make_mpf_style(base_mpf_style='binance', base_mpl_style="dark_background",
                                             rc={'font.family': 'Segoe UI Emoji'})
@@ -24,9 +26,12 @@ class PricePlot:
         self.is_auto_update = False
         self.client = client
         self.ta = ta
+        self.delta_x = 0
+        self.interval = interval
+        self.update_delta_x()
+        self.price = None
 
         self.symbol = symbol
-        self.interval = interval
         self.start_str = start_str
 
         self.data = self.get_binance_df()
@@ -34,6 +39,9 @@ class PricePlot:
         self._creat_plot()
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         self.ld = LineDrawer(self)
+        self.high = self.data.iloc[-1, 2]
+        self.low = self.data.iloc[-1, 3]
+        self.is_delta_updated = False
 
     def restore_mpl_event(self):
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
@@ -164,8 +172,46 @@ class PricePlot:
             self.ax1.tick_params(axis='x', labelbottom=False)
         self.is_show_volume = not self.is_show_volume
 
+    def update_delta_x(self):
+        def _th():
+            while True:
+                self.delta_x = calc_headless_delta(self, self.interval)
+                time.sleep(0.1)
+        Thread(target=_th).start()
+
+    def update_candle(self):
+        print(self.delta_x)
+        if self.prev_delta is not None and self.delta_x - self.prev_delta > 0:
+            latest_index = self.data.index[-1]
+            print(str(latest_index))
+            now_time = datetime.strptime(str(latest_index), "%Y-%m-%d %H:%M:%S")
+            delta_time = float(self.interval[:-1])*self.delta_x
+            if self.interval[-1] == "m":
+                new_time = now_time + timedelta(minutes=delta_time)
+            elif self.interval[-1] == "h":
+                new_time = now_time + timedelta(hours=delta_time)
+            elif self.interval[-1] == "d":
+                new_time = now_time + timedelta(days=delta_time)
+            new_index = new_time
+            print(f"self.delta_x: {self.delta_x}")
+            print(f"new_index: {new_index}")
+            new_open = self.data.iloc[-1, 3]
+            self.data.loc[new_index, "Open": "Close"] = [new_open, self.price, self.price, self.price]
+            print(f"new_data: {self.data.loc[new_index]}")
+            self.high = self.price
+            self.low = self.price
+        if self.price > self.high:
+            self.high = self.price
+        if self.price < self.low:
+            self.low = self.price
+        print(f"self.price: {self.price}")
+        self.data.iloc[-1, 1:4] = [self.high, self.low, self.price]
+        # print(self.data.iloc[-1])
+        self.prev_delta = self.delta_x
+
     def refresh_plot(self, autoscale=False):
-        self.data = self.get_binance_df()
+        # self.data = self.get_binance_df()
+        self.update_candle()
         self.ax1.collections.clear()
         self.ax3.clear()
         mpf.plot(self.data, ax=self.ax1, volume=self.ax3, type='candle',
@@ -179,6 +225,6 @@ class PricePlot:
             while self.is_auto_update:
                 self.refresh_plot()
                 self.fig.canvas.draw()
-                time.sleep(2)
+                time.sleep(1)
 
         Thread(target=_th).start()

@@ -5,8 +5,6 @@ class AlertEquation:
     def __init__(self, single_line):
         self.single_line = single_line
         self.init_data_x = single_line.pp.init_data_x
-        self.interval = single_line.pp.ta.interval
-        self.start_time = single_line.pp.ta.start_time
         self.curr_x = None
         self.diff = None
         self.is_been_triggered = False
@@ -37,13 +35,12 @@ class AlertEquation:
         else:
             return False
 
-    def is_alert_triggered(self, price, data_index, touch_threshold=None):
+    def is_alert_triggered(self, price, touch_threshold=None):
         if self.is_been_triggered:
             return False
 
         prev_x = self.curr_x
-        delta = calc_headless_delta(self.start_time, self.interval)
-        self.curr_x = (len(self.init_data_x) - 1) + delta
+        self.curr_x = (len(self.init_data_x) - 1) + self.single_line.pp.delta_x
 
         alert_x = self.curr_x
         alert_y = alert_x * self.m + self.b

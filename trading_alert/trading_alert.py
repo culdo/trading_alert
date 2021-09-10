@@ -18,11 +18,14 @@ class TradingAlert:
     def __init__(self, start_str, **kwargs):
         self.start_str = start_str
         self.interval = kwargs["interval"]
-        account = BinanceAccount()
+        self.client = BinanceAccount()
         self._init_tk()
-        self.pp = PricePlot(start_str, account, self, **kwargs)
-        self.alert_event_loop()
         self.start_time = datetime.now()
+        self.pp = PricePlot(start_str, self.client, self, **kwargs)
+        self.pp_collection = {self.pp.symbol: self.pp}
+        self.alert_event_loop()
+        self.symbols_ticker = None
+        self.price = None
 
     def restore(self):
         _apply_mpfstyle(self.pp.style)
@@ -36,22 +39,23 @@ class TradingAlert:
     def alert_event_loop(self):
         def _th():
             while True:
-                if self.pp.ld.has_alert():
-                    symbols = self.pp.client.get_symbol_ticker()
-                    # TODO 210910: Use thread workers to detect alert per symbol
-                    for symbol in symbols:
-                        if symbol["symbol"] == self.pp.symbol:
-                            price = float(symbol["price"])
-                            self.when_alert_triggered(price, self.test_cb)
+                self.symbols_ticker = self.client.get_symbol_ticker()
+                # TODO 210910: Use thread workers to detect alert per symbol
+                for item in self.symbols_ticker:
+                    if item["symbol"] in self.pp_collection.keys():
+                        pp = self.pp_collection[item["symbol"]]
+                        pp.price = float(item["price"])
+                        if pp.ld.has_alert():
+                            self.when_alert_triggered(self.test_cb)
                 time.sleep(1)
 
         Thread(target=_th).start()
 
-    def when_alert_triggered(self, price, cb_alert):
+    def when_alert_triggered(self, cb_alert):
         # TODO 210910: Use thread workers to detect alert per line
         for line in self.pp.ld.lines:
             # TODO 210909: Change method of getting x index to headless method
-            if line.alert_equation and line.alert_equation.is_alert_triggered(price, self.pp.data.index):
+            if line.alert_equation and line.alert_equation.is_alert_triggered(self.price):
                 self._do_after_alert(cb_alert, line)
 
     def _do_after_alert(self, cb_alert, line, send_email=True):
