@@ -2,6 +2,7 @@ import time
 from datetime import datetime, timedelta
 from threading import Thread
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import mplfinance as mpf
@@ -11,6 +12,7 @@ from mplfinance._styles import _apply_mpfstyle
 
 from trading_alert.base.line_drawer import LineDrawer
 from trading_alert.util.time_tool import calc_headless_delta
+# matplotlib.use('tkagg')
 
 specify_date = datetime(year=2021, month=8, day=29, hour=1, minute=30).astimezone().strftime("%d %B %Y %H:%M %z")
 
@@ -37,7 +39,8 @@ class PricePlot:
 
         self.update_delta_x()
         self._creat_plot()
-        self.fig.canvas.mpl_connect('key_press_event', self.on_press)
+        # self.fig.canvas = self.ta.main_window.canvas
+        # self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         self.ld = LineDrawer(self)
         self.is_delta_updated = False
 
@@ -46,7 +49,7 @@ class PricePlot:
 
         self.update_delta_x()
         _apply_mpfstyle(self.style)
-        self.restore_mpl_event()
+        # self.restore_mpl_event()
         self.ld.restore_notify()
 
     def _init_data_vars(self):
@@ -58,7 +61,7 @@ class PricePlot:
         self.prev_delta = None
 
     def restore_mpl_event(self):
-        self.fig.canvas.mpl_connect('key_press_event', self.on_press)
+        self.ta.main_window.canvas.mpl_connect('key_press_event', self.on_press)
 
     def get_binance_df(self):
         klines = np.array(self.client.get_historical_klines(self.symbol, self.interval, start_str=self.start_str))

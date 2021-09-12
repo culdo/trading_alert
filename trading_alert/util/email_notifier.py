@@ -10,5 +10,5 @@ def send_notify_email(line):
     attach_plots = [filename]
 
     send_mail("wuorsut@gmail.com", subject,
-              content, attachments=attach_plots)
-    os.remove(filename)
+              content)
+    # os.remove(filename)

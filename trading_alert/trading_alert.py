@@ -6,6 +6,7 @@ from tkinter import font
 from mplfinance._styles import _apply_mpfstyle
 from requests import ReadTimeout
 
+from trading_alert.base.main_window import MainWindow
 from trading_alert.candle_plotting import PricePlot, mpf
 from datetime import datetime
 
@@ -16,28 +17,29 @@ from trading_alert.util.time_tool import get_before_time
 
 # TODO 210910: Use thread workers to spawn multiple PricePlot in one TradingAlert
 class TradingAlert:
-    def __init__(self, start_str, symbols, **kwargs):
+    def __init__(self, start_str, symbol="BTCUSDT", **kwargs):
         self.start_str = start_str
+        self.kwargs = kwargs
         self.interval = kwargs["interval"]
         self.client = BinanceAccount()
-        self._init_tk()
         self.start_time = datetime.now()
         self.pp_collection = {
             symbol: PricePlot(self, symbol=symbol, **kwargs)
-            for symbol in symbols
         }
+        self.symbols_ticker = self.client.get_symbol_ticker()
+        self.main_pp = list(self.pp_collection.values())[0]
+        self.main_window = MainWindow(self)
         self.alert_event_loop()
-        self.symbols_ticker = None
 
     def restore(self):
         for pp in self.pp_collection.values():
             pp.restore()
-        self._init_tk()
+        self.main_window = MainWindow(self)
         self.alert_event_loop()
 
     def alert_event_loop(self):
         def _th():
-            while True:
+            while not self.main_window.is_destroyed:
                 try:
                     self.symbols_ticker = self.client.get_symbol_ticker()
                 except ReadTimeout:
@@ -48,13 +50,16 @@ class TradingAlert:
                     if item["symbol"] in self.pp_collection.keys():
                         pp = self.pp_collection[item["symbol"]]
                         pp.price = float(item["price"])
-                        if pp.is_auto_update:
+                        if pp is self.main_pp and pp.is_auto_update:
                             pp.refresh_plot()
                             try:
-                                pp.fig.canvas.draw()
+                                self.main_window.canvas.draw_idle()
                             except AttributeError:
                                 print("AttributeError")
                                 continue
+                            except RuntimeError:
+                                print("quit")
+                                break
                         if pp.ld.has_alert():
                             self.when_alert_triggered(pp, self.test_cb)
                 time.sleep(1)
@@ -82,10 +87,3 @@ class TradingAlert:
 
     def test_cb(self):
         print("執行觸發時回呼函數")
-
-    def _init_tk(self):
-        root = tk.Tk()
-        root.withdraw()
-        default_font = font.nametofont("TkDefaultFont")
-        default_font.configure(family='Courier', size=20)
-        root.option_add("*Font", default_font)
