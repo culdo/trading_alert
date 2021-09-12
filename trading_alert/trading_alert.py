@@ -17,14 +17,14 @@ from trading_alert.util.time_tool import get_before_time
 
 # TODO 210910: Use thread workers to spawn multiple PricePlot in one TradingAlert
 class TradingAlert:
-    def __init__(self, start_str, symbol="BTCUSDT", **kwargs):
+    def __init__(self, start_str, default_symbol="BTCUSDT", **kwargs):
         self.start_str = start_str
         self.kwargs = kwargs
         self.interval = kwargs["interval"]
         self.client = BinanceAccount()
         self.start_time = datetime.now()
         self.pp_collection = {
-            symbol: PricePlot(self, symbol=symbol, **kwargs)
+            default_symbol: PricePlot(self, symbol=default_symbol, **kwargs)
         }
         self.symbols_ticker = self.client.get_symbol_ticker()
         self.main_pp = list(self.pp_collection.values())[0]

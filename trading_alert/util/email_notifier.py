@@ -6,8 +6,8 @@ def send_notify_email(line):
     content = line.notify_msg
     subject = f"TradingAlert {content}"
     filename = (subject + ".jpg").replace(" ", "_")
-    line.plt_line.figure.savefig(filename)
-    attach_plots = [filename]
+    # line.plt_line.figure.savefig(filename, backend="TkAgg")
+    # attach_plots = [filename]
 
     send_mail("wuorsut@gmail.com", subject,
               content)

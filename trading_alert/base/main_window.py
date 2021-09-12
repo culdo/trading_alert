@@ -74,6 +74,9 @@ class MainWindow:
         """
         selected_symbol = self.listbox.get(self.listbox.curselection()).replace("/", "")
         print(f'You selected: {selected_symbol}')
+        self.to_symbol_plot(selected_symbol)
+
+    def to_symbol_plot(self, selected_symbol):
         if selected_symbol not in self.ta.pp_collection.keys():
             self.ta.pp_collection[selected_symbol] = PricePlot(self.ta, symbol=selected_symbol, **self.ta.kwargs)
             self.ta.main_pp = self.ta.pp_collection[selected_symbol]
@@ -83,7 +86,6 @@ class MainWindow:
         self.canvas.figure = self.ta.main_pp.fig
         self.canvas.figure.set_canvas(self.canvas)
         self.canvas.draw()
-
         self.canvas.mpl_disconnect(self.cid)
         self.cid = self.canvas.mpl_connect("key_press_event", self.ta.main_pp.on_press)
 

@@ -1,3 +1,4 @@
 .idea/
 api_key.json
 *.pkl
+*.egg-info
