@@ -7,6 +7,8 @@ import pandas as pd
 import mplfinance as mpf
 import pickle as pk
 
+from mplfinance._styles import _apply_mpfstyle
+
 from trading_alert.base.line_drawer import LineDrawer
 from trading_alert.util.time_tool import calc_headless_delta
 
@@ -14,9 +16,8 @@ specify_date = datetime(year=2021, month=8, day=29, hour=1, minute=30).astimezon
 
 
 class PricePlot:
-    def __init__(self, start_str, client, ta, symbol="BTCUSDT", interval='15m', theme="white"):
+    def __init__(self, ta, symbol="BTCUSDT", interval='15m', theme="white"):
         self.curr_time = None
-        self.prev_delta = None
         if theme == "black":
             self.style = mpf.make_mpf_style(base_mpf_style='binance', base_mpl_style="dark_background",
                                             rc={'font.family': 'Segoe UI Emoji'})
@@ -24,31 +25,40 @@ class PricePlot:
             self.style = mpf.make_mpf_style(base_mpf_style='binance', rc={'font.family': 'Segoe UI Emoji'})
         self.theme = theme
         self.is_show_volume = True
-        self.is_auto_update = False
-        self.client = client
+        self.is_auto_update = True
+        self.client = ta.client
         self.ta = ta
-        self.delta_x = 0
         self.interval = interval
-        self.update_delta_x()
         self.price = None
-
         self.symbol = symbol
-        self.start_str = start_str
+        self.start_str = ta.start_str
 
-        self.data = self.get_binance_df()
-        self.init_data_x = self.data.index
+        self._init_data_vars()
+
+        self.update_delta_x()
         self._creat_plot()
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         self.ld = LineDrawer(self)
-        self.high = self.data.iloc[-1, 2]
-        self.low = self.data.iloc[-1, 3]
         self.is_delta_updated = False
+
+    def restore(self):
+        self._init_data_vars()
+
+        self.update_delta_x()
+        _apply_mpfstyle(self.style)
+        self.restore_mpl_event()
+        self.ld.restore_notify()
+
+    def _init_data_vars(self):
+        self.data = self.get_binance_df()
+        self.delta_x = 0
+        self.init_data_x = self.data.index
+        self.high = self.data.iloc[-1, 1]
+        self.low = self.data.iloc[-1, 2]
+        self.prev_delta = None
 
     def restore_mpl_event(self):
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
-
-    def get_data_index(self):
-        return self.data.index
 
     def get_binance_df(self):
         klines = np.array(self.client.get_historical_klines(self.symbol, self.interval, start_str=self.start_str))
@@ -113,7 +123,7 @@ class PricePlot:
                 self.save_as_pickle()
             # move clicked line
             elif event.key == 'm':
-                print("move_line_end")
+                print("start move line")
                 self.ld.move_line_end()
             # done move
             elif event.key == ',':
@@ -134,8 +144,6 @@ class PricePlot:
             # refresh plot
             elif event.key == 'u':
                 self.is_auto_update = not self.is_auto_update
-                if self.is_auto_update:
-                    self.refresh_plot_th()
             # open/close volume panel
             elif event.key == '=':
                 self.toggle_volume_panel()
@@ -150,15 +158,17 @@ class PricePlot:
             self.fig.canvas.draw()
 
     def save_as_pickle(self):
-        for line in self.ld.lines:
-            line.win10_toast = None
-            line.alert_equation.diff_temp = line.alert_equation.diff
-            line.alert_equation.diff = None
+        for pp in self.ta.pp_collection:
+            for line in pp.ld.lines:
+                line.win10_toast = None
+                line.alert_equation.diff_temp = line.alert_equation.diff
+                line.alert_equation.diff = None
         pk.dump(self.ta, file=open('ta.pkl', 'wb'))
-        print("Save TradingAlert as ta.pkl")
-        for line in self.ld.lines:
-            line.set_win10_toast()
-            line.alert_equation.diff = line.alert_equation.diff_temp
+        print(f"Save TradingAlert as ta.pkl")
+        for pp in self.ta.pp_collection:
+            for line in pp.ld.lines:
+                line.set_win10_toast()
+                line.alert_equation.diff = line.alert_equation.diff_temp
 
     def toggle_volume_panel(self):
         if self.is_show_volume:
@@ -181,23 +191,17 @@ class PricePlot:
         Thread(target=_th).start()
 
     def update_candle(self):
-        print(self.delta_x)
         if self.prev_delta is not None and self.delta_x - self.prev_delta > 0:
             new_index = self.curr_time
-            print(f"self.delta_x: {self.delta_x}")
-            print(f"new_index: {new_index}")
             new_open = self.data.iloc[-1, 3]
             self.data.loc[new_index, "Open": "Close"] = [new_open, self.price, self.price, self.price]
-            print(f"new_data: {self.data.loc[new_index]}")
             self.high = self.price
             self.low = self.price
         if self.price > self.high:
             self.high = self.price
         if self.price < self.low:
             self.low = self.price
-        print(f"self.price: {self.price}")
         self.data.iloc[-1, 1:4] = [self.high, self.low, self.price]
-        # print(self.data.iloc[-1])
         self.prev_delta = self.delta_x
 
     def refresh_plot(self, autoscale=False):
@@ -210,12 +214,3 @@ class PricePlot:
         if autoscale:
             self.ax1.autoscale()
             self.ax3.autoscale()
-
-    def refresh_plot_th(self):
-        def _th():
-            while self.is_auto_update:
-                self.refresh_plot()
-                self.fig.canvas.draw()
-                time.sleep(1)
-
-        Thread(target=_th).start()

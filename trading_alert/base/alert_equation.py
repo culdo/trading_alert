@@ -5,6 +5,7 @@ class AlertEquation:
     def __init__(self, single_line):
         self.single_line = single_line
         self.init_data_x = single_line.pp.init_data_x
+        self.pp = single_line.pp
         self.curr_x = None
         self.diff = None
         self.is_been_triggered = False
@@ -35,7 +36,7 @@ class AlertEquation:
         else:
             return False
 
-    def is_alert_triggered(self, price, touch_threshold=None):
+    def is_alert_triggered(self, touch_threshold=None):
         if self.is_been_triggered:
             return False
 
@@ -46,10 +47,10 @@ class AlertEquation:
         alert_y = alert_x * self.m + self.b
 
         prev_diff = self.diff
-        self.diff = alert_y - price
+        self.diff = alert_y - self.pp.price
         if self.is_debug:
             print(f"prev_x curr_x: {prev_x} {self.curr_x}")
-            print(f"next_y - price: {alert_y} - {price}")
+            print(f"next_y - price: {alert_y} - {self.pp.price}")
             print(f"next_y diff:{self.diff}")
             print()
         is_same_bar = prev_x == self.curr_x

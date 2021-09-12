@@ -81,14 +81,14 @@ class SingleLine:
             print("重複設定鬧鐘!!!")
             return
 
-        self.notify_msg = askstring("Trading Alert", "觸發時通知訊息")
+        self.notify_msg = self.symbol + " " + askstring("Trading Alert", "觸發時通知訊息")
         if not self.is_debug:
             self.set_win10_toast()
 
         self._add_alert(self.annotation_point)
 
     def set_win10_toast(self):
-        self.win10_toast = Win10Toast(self.symbol + " " + self.notify_msg)
+        self.win10_toast = Win10Toast(self.notify_msg)
 
     def _add_alert(self, annotation_point):
         self.alert_annotation = self.ax.annotate('⏰',
