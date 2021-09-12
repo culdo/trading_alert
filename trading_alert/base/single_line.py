@@ -64,17 +64,15 @@ class SingleLine:
             self.alert_annotation.remove()
             self._add_alert(p3)
 
-    def remove(self, lines):
+    def remove(self):
         if isinstance(self.plt_line, list):
             self.plt_line.pop().remove()
         elif isinstance(self.plt_line, Line2D):
             self.plt_line.remove()
         else:
             raise TypeError
-        self.unset_alert()
 
-        lines.remove(self)
-        del self
+        self.pp.ld.lines.remove(self)
 
     def set_alert(self):
         if self.alert_equation:

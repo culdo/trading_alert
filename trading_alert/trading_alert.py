@@ -7,12 +7,11 @@ from mplfinance._styles import _apply_mpfstyle
 from requests import ReadTimeout
 
 from trading_alert.base.main_window import MainWindow
-from trading_alert.candle_plotting import PricePlot, mpf
+from trading_alert.binance_plot import PricePlot, mpf
 from datetime import datetime
 
 from trading_alert.trade.account import BinanceAccount
 from trading_alert.util.email_notifier import send_notify_email
-from trading_alert.util.time_tool import get_before_time
 
 
 # TODO 210910: Use thread workers to spawn multiple PricePlot in one TradingAlert
@@ -32,9 +31,9 @@ class TradingAlert:
         self.alert_event_loop()
 
     def restore(self):
+        self.main_window = MainWindow(self)
         for pp in self.pp_collection.values():
             pp.restore()
-        self.main_window = MainWindow(self)
         self.alert_event_loop()
 
     def alert_event_loop(self):

@@ -39,8 +39,6 @@ class PricePlot:
 
         self.update_delta_x()
         self._creat_plot()
-        # self.fig.canvas = self.ta.main_window.canvas
-        # self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         self.ld = LineDrawer(self)
         self.is_delta_updated = False
 
@@ -161,17 +159,22 @@ class PricePlot:
             self.fig.canvas.draw()
 
     def save_as_pickle(self):
-        for pp in self.ta.pp_collection:
+        main_window = self.ta.main_window
+        self.ta.main_window = None
+        for pp in self.ta.pp_collection.values():
             for line in pp.ld.lines:
                 line.win10_toast = None
-                line.alert_equation.diff_temp = line.alert_equation.diff
-                line.alert_equation.diff = None
+                if line.alert_equation:
+                    line.alert_equation.diff_temp = line.alert_equation.diff
+                    line.alert_equation.diff = None
         pk.dump(self.ta, file=open('ta.pkl', 'wb'))
         print(f"Save TradingAlert as ta.pkl")
-        for pp in self.ta.pp_collection:
+        self.ta.main_window = main_window
+        for pp in self.ta.pp_collection.values():
             for line in pp.ld.lines:
-                line.set_win10_toast()
-                line.alert_equation.diff = line.alert_equation.diff_temp
+                if line.alert_equation:
+                    line.set_win10_toast()
+                    line.alert_equation.diff = line.alert_equation.diff_temp
 
     def toggle_volume_panel(self):
         if self.is_show_volume:

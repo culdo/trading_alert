@@ -1,3 +1,6 @@
+import time
+import tkinter
+
 import numpy as np
 
 from trading_alert.base.single_line import SingleLine
@@ -69,15 +72,28 @@ class LineDrawer:
         self.is_move_done = False
 
     def remove_clicked(self):
-        self.selected_line.remove(self.lines)
+        self.unset_alert()
+        self.selected_line.remove()
+        self.selected_line = None
 
     def set_alert(self):
         if not self.selected_line:
             print("Please click a line")
+            return
+        symbol_label = self.pp.symbol[:-4]+"/"+self.pp.symbol[-4:]
+        bookmark_list = self.pp.ta.main_window.bookmark_list
+        if symbol_label not in bookmark_list.get(0, tkinter.END):
+            bookmark_list.insert(tkinter.END, symbol_label)
         self.selected_line.set_alert()
 
     def unset_alert(self):
         self.selected_line.unset_alert()
+        if not self.has_alert():
+            bookmark_list = self.pp.ta.main_window.bookmark_list
+            symbol_label = self.pp.symbol[:-4]+"/"+self.pp.symbol[-4:]
+            if symbol_label in bookmark_list.get(0, tkinter.END):
+                idx = bookmark_list.get(0, tkinter.END).index(symbol_label)
+                bookmark_list.delete(idx)
 
     def has_alert(self):
         for line in self.lines:

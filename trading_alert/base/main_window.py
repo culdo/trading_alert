@@ -12,7 +12,7 @@ from matplotlib.figure import Figure
 
 import numpy as np
 
-from trading_alert.candle_plotting import PricePlot
+from trading_alert.binance_plot import PricePlot
 
 
 class MainWindow:
@@ -25,36 +25,87 @@ class MainWindow:
         self.root.option_add("*Font", default_font)
         self.root.wm_title("Embedding in Tk")
 
-        frame = tkinter.Frame(self.root)
-        frame.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+        tkinter.Grid.rowconfigure(self.root, 0, weight=1)
+        tkinter.Grid.columnconfigure(self.root, 0, weight=100)
 
-        list_frame = tkinter.Frame(self.root)
-        list_frame.pack(side=tkinter.RIGHT, fill=tkinter.BOTH)
+        tkinter.Grid.columnconfigure(self.root, 1, weight=1)
+
+        left_side = tkinter.Frame(self.root)
+        left_side.grid(row=0, column=0, sticky="NSEW")
+
+        right_side = tkinter.Frame(self.root)
+        right_side.grid(row=0, column=1, sticky="NSEW")
+
+        tkinter.Grid.rowconfigure(right_side, 0, weight=1)
+        tkinter.Grid.columnconfigure(right_side, 0, weight=1)
+
+        tkinter.Grid.rowconfigure(right_side, 1, weight=100)
+
+        option_frame = tkinter.Frame(right_side)
+        option_frame.grid(row=0, column=0, sticky="NSEW")
+
+        button = tkinter.Button(master=option_frame, text="All", command=self._show_all_list)
+        button.pack(side=tkinter.LEFT)
+        button = tkinter.Button(master=option_frame, text="Has alert", command=self._show_bookmark_list)
+        button.pack(side=tkinter.LEFT)
+
+        self.all_list_frame = tkinter.Frame(right_side)
+        self.all_list_frame.grid(row=1, column=0, sticky="NSEW")
+
+        self.bookmark_list_frame = tkinter.Frame(right_side)
+        self.bookmark_list_frame.grid(row=1, column=0, sticky="NSEW")
+        self.current_list = self.bookmark_list_frame
 
         self.ta = ta
-        self._init_plot(frame, ta)
+        self._init_plot(left_side, ta)
 
-        button = tkinter.Button(master=frame, text="Quit", command=self._quit)
+        button = tkinter.Button(master=left_side, text="Quit", command=self._quit)
         button.pack(side=tkinter.BOTTOM)
 
+        self._init_all_list(ta)
+        self._init_bookmark_list(ta)
+
+    def _init_all_list(self, ta):
         symbols = []
         for item in ta.symbols_ticker:
             if item["symbol"][-4:] == "USDT":
                 symbols.append(item['symbol'][:-4] + "/" + item['symbol'][-4:])
-
         symbols = sorted(symbols)
         list_items = tkinter.StringVar(value=symbols)
-        self.listbox = tkinter.Listbox(master=list_frame, listvariable=list_items)
-        self.listbox.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
-
-        scrollbar = tkinter.Scrollbar(list_frame)
+        self.all_list = tkinter.Listbox(master=self.all_list_frame, listvariable=list_items)
+        self.all_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+        scrollbar = tkinter.Scrollbar(self.all_list_frame)
         scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.BOTH)
+        self.all_list.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=self.all_list.yview)
+        self.all_list.bind('<<ListboxSelect>>', self.items_selected)
 
+    def _init_bookmark_list(self, ta):
+        symbols = []
+        has_alert = False
+        for pp in ta.pp_collection.values():
+            if pp.ld.has_alert():
+                symbols.append(pp.symbol[:-4] + "/" + pp.symbol[-4:])
+                has_alert = True
+        symbols = sorted(symbols)
+        list_items = tkinter.StringVar(value=symbols)
+        self.bookmark_list = tkinter.Listbox(master=self.bookmark_list_frame, listvariable=list_items)
+        self.bookmark_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+        scrollbar = tkinter.Scrollbar(master=self.bookmark_list_frame)
+        scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.BOTH)
+        self.bookmark_list.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=self.bookmark_list.yview)
+        self.bookmark_list.bind('<<ListboxSelect>>', self.items_selected)
+        if not has_alert:
+            self._show_all_list()
 
-        self.listbox.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=self.listbox.yview)
+    def _show_all_list(self):
+        self.all_list_frame.tkraise()
+        self.current_list = self.all_list
 
-        self.listbox.bind('<<ListboxSelect>>', self.items_selected)
+    def _show_bookmark_list(self):
+        self.bookmark_list_frame.tkraise()
+        self.current_list = self.bookmark_list
 
     def _init_plot(self, frame, ta):
         self.canvas = FigureCanvasTkAgg(ta.main_pp.fig, frame)  # A tk.DrawingArea.
@@ -72,7 +123,7 @@ class MainWindow:
     def items_selected(self, event):
         """ handle item selected event
         """
-        selected_symbol = self.listbox.get(self.listbox.curselection()).replace("/", "")
+        selected_symbol = self.current_list.get(self.current_list.curselection()[0]).replace("/", "")
         print(f'You selected: {selected_symbol}')
         self.to_symbol_plot(selected_symbol)
 
@@ -92,6 +143,7 @@ class MainWindow:
         def _foucs_set():
             time.sleep(0.1)
             self.canvas._tkcanvas.focus_set()
+
         Thread(target=_foucs_set).start()
 
     def _quit(self):
