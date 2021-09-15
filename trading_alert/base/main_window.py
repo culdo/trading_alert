@@ -54,7 +54,6 @@ class MainWindow:
 
         self.bookmark_list_frame = tkinter.Frame(right_side)
         self.bookmark_list_frame.grid(row=1, column=0, sticky="NSEW")
-        self.current_list = self.bookmark_list_frame
 
         self.ta = ta
         self._init_plot(left_side, ta)
@@ -98,6 +97,8 @@ class MainWindow:
         self.bookmark_list.bind('<<ListboxSelect>>', self.items_selected)
         if not has_alert:
             self._show_all_list()
+        else:
+            self._show_bookmark_list()
 
     def _show_all_list(self):
         self.all_list_frame.tkraise()
@@ -134,6 +135,7 @@ class MainWindow:
             self.ta.main_pp.fig.canvas.manager = FigureManagerBase(self.canvas, 0)
         else:
             self.ta.main_pp = self.ta.pp_collection[selected_symbol]
+            self.ta.main_pp.init_data_vars()
         self.canvas.figure = self.ta.main_pp.fig
         self.canvas.figure.set_canvas(self.canvas)
         self.canvas.draw()

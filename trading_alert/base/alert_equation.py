@@ -4,9 +4,7 @@ from trading_alert.util.time_tool import calc_headless_delta
 class AlertEquation:
     def __init__(self, single_line):
         self.single_line = single_line
-        self.init_data_x = single_line.pp.init_data_x
         self.pp = single_line.pp
-        self.curr_x = None
         self.diff = None
         self.is_been_triggered = False
         self.is_debug = False
@@ -40,24 +38,20 @@ class AlertEquation:
         if self.is_been_triggered:
             return False
 
-        prev_x = self.curr_x
-        self.curr_x = (len(self.init_data_x) - 1) + self.single_line.pp.delta_x
+        curr_x = len(self.pp.data.index) - 1
 
-        alert_x = self.curr_x
-        alert_y = alert_x * self.m + self.b
+        alert_y = curr_x * self.m + self.b
 
         prev_diff = self.diff
         self.diff = alert_y - self.pp.price
         if self.is_debug:
-            print(f"prev_x curr_x: {prev_x} {self.curr_x}")
             print(f"next_y - price: {alert_y} - {self.pp.price}")
             print(f"next_y diff:{self.diff}")
             print()
-        is_same_bar = prev_x == self.curr_x
-        is_crossed = prev_diff and is_same_bar and (
+        is_crossed = prev_diff and (
                     (self.diff < 0 < prev_diff) or (self.diff > 0 > prev_diff))
         # is_touched = abs(self.diff) < touch_threshold
-        if self.check_x_range(alert_x) and is_crossed:
+        if self.check_x_range(curr_x) and is_crossed:
             self.is_been_triggered = True
             return True
 

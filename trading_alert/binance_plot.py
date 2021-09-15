@@ -14,18 +14,11 @@ from trading_alert.base.line_drawer import LineDrawer
 from trading_alert.util.time_tool import calc_headless_delta
 # matplotlib.use('tkagg')
 
-specify_date = datetime(year=2021, month=8, day=29, hour=1, minute=30).astimezone().strftime("%d %B %Y %H:%M %z")
-
 
 class PricePlot:
-    def __init__(self, ta, symbol="BTCUSDT", interval='15m', theme="white"):
+    def __init__(self, ta, symbol="BTCUSDT", interval='15m'):
         self.curr_time = None
-        if theme == "black":
-            self.style = mpf.make_mpf_style(base_mpf_style='binance', base_mpl_style="dark_background",
-                                            rc={'font.family': 'Segoe UI Emoji'})
-        else:
-            self.style = mpf.make_mpf_style(base_mpf_style='binance', rc={'font.family': 'Segoe UI Emoji'})
-        self.theme = theme
+
         self.is_show_volume = True
         self.is_auto_update = True
         self.client = ta.client
@@ -35,7 +28,7 @@ class PricePlot:
         self.symbol = symbol
         self.start_str = ta.start_str
 
-        self._init_data_vars()
+        self.init_data_vars()
 
         self.update_delta_x()
         self._creat_plot()
@@ -43,14 +36,16 @@ class PricePlot:
         self.is_delta_updated = False
 
     def restore(self):
-        self._init_data_vars()
+        self.init_data_vars()
 
         self.update_delta_x()
-        _apply_mpfstyle(self.style)
+        _apply_mpfstyle(self.ta.style)
         # self.restore_mpl_event()
         self.ld.restore_notify()
 
-    def _init_data_vars(self):
+    def init_data_vars(self):
+        for line in self.ld.lines:
+            line.diff = None
         self.data = self.get_binance_df()
         self.delta_x = 0
         self.init_data_x = self.data.index
@@ -84,7 +79,7 @@ class PricePlot:
         self.fig, axes = mpf.plot(self.data, returnfig=True, figratio=(10, 6), type="candle",
                                   volume=True,
                                   title=f"Price of {self.symbol}",
-                                  tight_layout=True, style=self.style)
+                                  tight_layout=True, style=self.ta.style)
         self.ax1 = axes[0]
         self.ax1.get_xaxis().label.set_visible(False)
         self.ax1.get_yaxis().label.set_visible(False)
@@ -93,7 +88,7 @@ class PricePlot:
         self.ax3.get_xaxis().label.set_visible(False)
         self.ax3.get_yaxis().label.set_visible(False)
 
-        if self.theme == "black":
+        if self.ta.theme == "black":
             self.ax1.set_facecolor("black")
             self.ax3.set_facecolor("black")
 
@@ -196,7 +191,7 @@ class PricePlot:
                 time.sleep(0.1)
         Thread(target=_th).start()
 
-    def update_candle(self):
+    def update_data(self):
         if self.prev_delta is not None and self.delta_x - self.prev_delta > 0:
             new_index = self.curr_time
             new_open = self.data.iloc[-1, 3]
@@ -212,11 +207,21 @@ class PricePlot:
 
     def refresh_plot(self, autoscale=False):
         # self.data = self.get_binance_df()
-        self.update_candle()
-        self.ax1.collections.clear()
-        self.ax3.clear()
-        mpf.plot(self.data, ax=self.ax1, volume=self.ax3, type='candle',
-                 style="binance")
-        if autoscale:
-            self.ax1.autoscale()
-            self.ax3.autoscale()
+        self.update_data()
+        if self is self.ta.main_pp:
+            self.ax1.collections.clear()
+            self.ax3.clear()
+            mpf.plot(self.data, ax=self.ax1, volume=self.ax3, type='candle',
+                     style="binance")
+            if autoscale:
+                self.ax1.autoscale()
+                self.ax3.autoscale()
+
+            try:
+                self.ta.main_window.canvas.draw_idle()
+            except AttributeError:
+                print("AttributeError")
+                return
+            except RuntimeError:
+                print("quit")
+                return

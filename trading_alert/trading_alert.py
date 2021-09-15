@@ -3,7 +3,7 @@ import tkinter as tk
 from threading import Thread
 from tkinter import font
 
-from mplfinance._styles import _apply_mpfstyle
+import matplotlib.pyplot as plt
 from requests import ReadTimeout
 
 from trading_alert.base.main_window import MainWindow
@@ -16,7 +16,9 @@ from trading_alert.util.email_notifier import send_notify_email
 
 # TODO 210910: Use thread workers to spawn multiple PricePlot in one TradingAlert
 class TradingAlert:
-    def __init__(self, start_str, default_symbol="BTCUSDT", **kwargs):
+    def __init__(self, start_str, default_symbol="BTCUSDT", theme="white", **kwargs):
+        self.theme = theme
+        self._init_style()
         self.start_str = start_str
         self.kwargs = kwargs
         self.interval = kwargs["interval"]
@@ -30,15 +32,25 @@ class TradingAlert:
         self.main_window = MainWindow(self)
         self.alert_event_loop()
 
+    def _init_style(self):
+        if self.theme == "black":
+            self.style = mpf.make_mpf_style(base_mpf_style='binance', base_mpl_style="dark_background",
+                                            rc={'font.family': 'Segoe UI Emoji'})
+        else:
+            self.style = mpf.make_mpf_style(base_mpf_style='binance', rc={'font.family': 'Segoe UI Emoji'})
+
     def restore(self):
+        self._init_style()
         self.main_window = MainWindow(self)
+        # It's a bug workaround to keep reloaded figsize
+        plt.close(plt.figure())
         for pp in self.pp_collection.values():
             pp.restore()
         self.alert_event_loop()
 
     def alert_event_loop(self):
         def _th():
-            while not self.main_window.is_destroyed:
+            while True:
                 try:
                     self.symbols_ticker = self.client.get_symbol_ticker()
                 except ReadTimeout:
@@ -49,16 +61,8 @@ class TradingAlert:
                     if item["symbol"] in self.pp_collection.keys():
                         pp = self.pp_collection[item["symbol"]]
                         pp.price = float(item["price"])
-                        if pp is self.main_pp and pp.is_auto_update:
+                        if pp.is_auto_update:
                             pp.refresh_plot()
-                            try:
-                                self.main_window.canvas.draw_idle()
-                            except AttributeError:
-                                print("AttributeError")
-                                continue
-                            except RuntimeError:
-                                print("quit")
-                                break
                         if pp.ld.has_alert():
                             self.when_alert_triggered(pp, self.test_cb)
                 time.sleep(1)

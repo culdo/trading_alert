@@ -59,10 +59,12 @@ class SingleLine:
         else:
             AssertionError("Line type error!")
 
+        self.annotation_point = p3
+
         if self.alert_equation:
             print("move alert too")
             self.alert_annotation.remove()
-            self._add_alert(p3)
+            self._add_alert()
 
     def remove(self):
         if isinstance(self.plt_line, list):
@@ -83,14 +85,14 @@ class SingleLine:
         if not self.is_debug:
             self.set_win10_toast()
 
-        self._add_alert(self.annotation_point)
+        self._add_alert()
 
     def set_win10_toast(self):
         self.win10_toast = Win10Toast(self.notify_msg)
 
-    def _add_alert(self, annotation_point):
+    def _add_alert(self):
         self.alert_annotation = self.ax.annotate('⏰',
-                                                 xy=annotation_point, xycoords='data', color=self.enable_color)
+                                                 xy=self.annotation_point, xycoords='data', color=self.enable_color)
         self.alert_equation = AlertEquation(self)
 
     def unset_alert(self):
