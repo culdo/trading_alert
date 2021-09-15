@@ -17,6 +17,7 @@ from trading_alert.util.email_notifier import send_notify_email
 # TODO 210910: Use thread workers to spawn multiple PricePlot in one TradingAlert
 class TradingAlert:
     def __init__(self, start_str, default_symbol="BTCUSDT", theme="white", **kwargs):
+        self.symbol_prices = {}
         self.theme = theme
         self._init_style()
         self.start_str = start_str
@@ -24,13 +25,13 @@ class TradingAlert:
         self.interval = kwargs["interval"]
         self.client = BinanceAccount()
         self.start_time = datetime.now()
+        self._update_symbol_prices()
         self.pp_collection = {
             default_symbol: PricePlot(self, symbol=default_symbol, **kwargs)
         }
-        self.symbols_ticker = self.client.get_symbol_ticker()
         self.main_pp = list(self.pp_collection.values())[0]
         self.main_window = MainWindow(self)
-        self.alert_event_loop()
+        self._alert_event_loop()
 
     def _init_style(self):
         if self.theme == "black":
@@ -41,30 +42,38 @@ class TradingAlert:
 
     def restore(self):
         self._init_style()
+        self._update_symbol_prices()
         self.main_window = MainWindow(self)
         # It's a bug workaround to keep reloaded figsize
         plt.close(plt.figure())
         for pp in self.pp_collection.values():
             pp.restore()
-        self.alert_event_loop()
+        self._alert_event_loop()
 
-    def alert_event_loop(self):
+    def _update_symbol_prices(self):
         def _th():
             while True:
                 try:
-                    self.symbols_ticker = self.client.get_symbol_ticker()
+                    symbols_ticker = self.client.get_symbol_ticker()
+                    for item in symbols_ticker:
+                        self.symbol_prices[item["symbol"]] = float(item["price"])
                 except ReadTimeout:
                     print("ReadTimeout")
                     continue
+                time.sleep(1)
+        Thread(target=_th).start()
+
+    def _alert_event_loop(self):
+        def _th():
+            while True:
                 # TODO 210910: Use thread workers to detect alert per symbol
-                for item in self.symbols_ticker:
-                    if item["symbol"] in self.pp_collection.keys():
-                        pp = self.pp_collection[item["symbol"]]
-                        pp.price = float(item["price"])
-                        if pp.is_auto_update:
-                            pp.refresh_plot()
-                        if pp.ld.has_alert():
-                            self.when_alert_triggered(pp, self.test_cb)
+                for symbol, pp in self.pp_collection.items():
+                    pp.price = self.symbol_prices[symbol]
+                    pp.update_data()
+                    if pp is self.main_pp and pp.is_auto_update:
+                        pp.refresh_plot()
+                    if pp.ld.has_alert():
+                        self.when_alert_triggered(pp, self.test_cb)
                 time.sleep(1)
 
         Thread(target=_th).start()

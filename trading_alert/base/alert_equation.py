@@ -39,7 +39,6 @@ class AlertEquation:
             return False
 
         curr_x = len(self.pp.data.index) - 1
-
         alert_y = curr_x * self.m + self.b
 
         prev_diff = self.diff

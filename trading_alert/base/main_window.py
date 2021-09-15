@@ -61,14 +61,43 @@ class MainWindow:
         button = tkinter.Button(master=left_side, text="Quit", command=self._quit)
         button.pack(side=tkinter.BOTTOM)
 
+        self._add_total_balance(left_side)
+
         self._init_all_list(ta)
         self._init_bookmark_list(ta)
 
+    def _add_total_balance(self, left_side):
+        self.balance_var = tkinter.StringVar()
+        balance_label = tkinter.Label(left_side, textvariable=self.balance_var)
+        balance_label.pack(side=tkinter.RIGHT)
+        self._update_total_balance()
+
+    def _update_total_balance(self, interval=15 * 60):
+        def _th():
+            while True:
+
+                sum_usdt = 0.0
+                balances = self.ta.client.get_account()
+                for _balance in balances["balances"]:
+                    asset = _balance["asset"]
+                    if float(_balance["free"]) != 0.0 or float(_balance["locked"]) != 0.0:
+                        try:
+                            quantity = float(_balance["free"]) + float(_balance["locked"])
+                            sum_usdt += quantity * float(self.ta.symbol_prices[asset + "USDT"])
+                        except:
+                            pass
+
+                self.balance_var.set(f"total USDT: {sum_usdt:.2f}")
+
+                time.sleep(interval)
+
+        Thread(target=_th).start()
+
     def _init_all_list(self, ta):
         symbols = []
-        for item in ta.symbols_ticker:
-            if item["symbol"][-4:] == "USDT":
-                symbols.append(item['symbol'][:-4] + "/" + item['symbol'][-4:])
+        for symbol in ta.symbol_prices.keys():
+            if symbol[-4:] == "USDT":
+                symbols.append(symbol[:-4] + "/" + symbol[-4:])
         symbols = sorted(symbols)
         list_items = tkinter.StringVar(value=symbols)
         self.all_list = tkinter.Listbox(master=self.all_list_frame, listvariable=list_items)
