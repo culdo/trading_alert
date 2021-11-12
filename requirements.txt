@@ -6,3 +6,4 @@ matplotlib~=3.3.4
 winrt~=1.0.21033.1
 pandas~=1.2.4
 requests~=2.25.1
+python-binance~=1.0.12

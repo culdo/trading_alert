@@ -2,6 +2,8 @@
 ![demo](docs/demo.png "ScreenShot")
 Free trading alert tool
 
+# Supported exchange
+* Binance
 # Features
 * Drawings
 * Auto Refreshing Price on set alert
@@ -18,6 +20,7 @@ Free trading alert tool
 * **"="** to open/close volume panel
 
 # Requirements
+* python-binance
 * Matplotlib
 * Mplfinance
 * Tkinter
