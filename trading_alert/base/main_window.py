@@ -81,11 +81,11 @@ class MainWindow:
                 for _balance in balances["balances"]:
                     asset = _balance["asset"]
                     if float(_balance["free"]) != 0.0 or float(_balance["locked"]) != 0.0:
-                        try:
-                            quantity = float(_balance["free"]) + float(_balance["locked"])
+                        quantity = float(_balance["free"]) + float(_balance["locked"])
+                        if asset == "USDT":
+                            sum_usdt += quantity
+                        else:
                             sum_usdt += quantity * float(self.ta.symbol_prices[asset + "USDT"])
-                        except:
-                            pass
 
                 self.balance_var.set(f"total USDT: {sum_usdt:.2f}")
 

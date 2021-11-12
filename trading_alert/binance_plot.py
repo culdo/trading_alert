@@ -8,6 +8,8 @@ import pandas as pd
 import mplfinance as mpf
 import pickle as pk
 
+from binance.exceptions import BinanceAPIException
+from matplotlib.path import Path
 from mplfinance._styles import _apply_mpfstyle
 from requests import ReadTimeout
 
@@ -49,9 +51,11 @@ class PricePlot:
     def init_data_vars(self):
         self.data = self.get_binance_df()
         self.delta_x = 0
+        self.open = self.data.iloc[-1, 3]
         self.high = self.data.iloc[-1, 1]
         self.low = self.data.iloc[-1, 2]
         self.prev_delta = None
+        self.prev_refresh = None
 
     def restore_mpl_event(self):
         self.ta.main_window.canvas.mpl_connect('key_press_event', self.on_press)
@@ -97,14 +101,16 @@ class PricePlot:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 
         # place a text box in upper left in axes coords
-        self.balance_text = self.ax1.text(0.85, 0.95, "waiting for update...", transform=self.ax1.transAxes, fontsize=14,
+        self.balance_text = self.ax1.text(0.85, 0.95, "waiting for update...", transform=self.ax1.transAxes,
+                                          fontsize=14,
                                           verticalalignment='top', bbox=props)
         self._update_balance_box()
 
     def _update_balance_box(self):
         try:
             balance = self.client.get_asset_balance(asset=self.symbol[:-4])
-        except ReadTimeout:
+        except (ReadTimeout, BinanceAPIException) as e:
+            print(e)
             return
         textstr = '\n'.join((
             f'spot {self.symbol[:-4]}',
@@ -201,8 +207,8 @@ class PricePlot:
     def update_data(self):
         if self.prev_delta is not None and self.delta_x - self.prev_delta > 0:
             new_index = self.curr_time
-            new_open = self.data.iloc[-1, 3]
-            self.data.loc[new_index, "Open": "Close"] = [new_open, self.price, self.price, self.price]
+            self.open = self.data.iloc[-1, 3]
+            self.data.loc[new_index, "Open": "Close"] = [self.open, self.price, self.price, self.price]
             self.high = self.price
             self.low = self.price
         if self.price > self.high:

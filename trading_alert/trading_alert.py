@@ -57,8 +57,8 @@ class TradingAlert:
                     symbols_ticker = self.client.get_symbol_ticker()
                     for item in symbols_ticker:
                         self.symbol_prices[item["symbol"]] = float(item["price"])
-                except ReadTimeout:
-                    print("ReadTimeout")
+                except (ReadTimeout, ConnectionError) as e:
+                    print(e)
                     continue
                 time.sleep(1)
         Thread(target=_th).start()
@@ -67,14 +67,17 @@ class TradingAlert:
         def _th():
             while True:
                 # TODO 210910: Use thread workers to detect alert per symbol
-                for symbol, pp in self.pp_collection.items():
-                    pp.price = self.symbol_prices[symbol]
-                    pp.update_data()
-                    if pp is self.main_pp and pp.is_auto_update:
-                        pp.refresh_plot()
-                    if pp.ld.has_alert():
-                        self.when_alert_triggered(pp, self.test_cb)
-                time.sleep(1)
+                try:
+                    for symbol, pp in self.pp_collection.items():
+                        pp.price = self.symbol_prices[symbol]
+                        pp.update_data()
+                        if pp is self.main_pp and pp.is_auto_update:
+                            pp.refresh_plot()
+                        if pp.ld.has_alert():
+                            self.when_alert_triggered(pp, self.test_cb)
+                    time.sleep(1)
+                except RuntimeError:
+                    continue
 
         Thread(target=_th).start()
 

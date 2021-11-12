@@ -2,3 +2,4 @@
 api_key.json
 *.pkl
 *.egg-info
+__pycache__/

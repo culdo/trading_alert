@@ -1,4 +1,4 @@
-#Trading Alert
+# Trading Alert
 Free trading alert tool
 
 # Features
@@ -20,6 +20,6 @@ Free trading alert tool
 * Mplfinance
 * Tkinter
 
-# To-do-list
-- [ ] E-mail notification
-- [ ] Windows notification
+# To do list
+- [x] E-mail notification
+- [x] Windows notification
