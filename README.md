@@ -1,4 +1,5 @@
 # Trading Alert
+![demo](docs/demo.png "ScreenShot")
 Free trading alert tool
 
 # Features
@@ -10,10 +11,11 @@ Free trading alert tool
 * **"t"** to draw trend line
 * **"-"** to draw horizontal line
 * **"1"** to draw vertical line
+* **"a"** to set alert
+* **"z"** to delete alert
+* **"d"** to delete all
 * **"u"** to update price
 * **"="** to open/close volume panel
-* **"z"** to undo
-* **"d"** to delete alert
 
 # Requirements
 * Matplotlib
